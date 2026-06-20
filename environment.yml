@@ -1,0 +1,16 @@
+name: triton-kernels
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pytorch>=2.1.0
+  - pytorch-cuda=12.1
+  - pip:
+      - triton>=2.1.0
+      - pytest>=7.4.0
+      - matplotlib>=3.7.0
+      - pandas>=2.0.0
