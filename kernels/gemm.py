@@ -5,6 +5,11 @@ import triton.language as tl
 @triton.autotune(
     configs=[
         triton.Config(
+            {'BLOCK_M': 32, 'BLOCK_N': 32, 'BLOCK_K': 32, 'GROUP_SIZE': 8},
+            num_warps=2,
+            num_stages=2
+        ),
+        triton.Config(
             {'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_K': 64, 'GROUP_SIZE': 8},
             num_warps=8,
             num_stages=2
@@ -153,8 +158,10 @@ def matmul(A, B):
 
     assert A.shape[1] == B.shape[0]
 
-    A = A.contiguous().half()
-    B = B.contiguous().half()
+    if not A.is_contiguous() or A.dtype != torch.float16:
+        A = A.contiguous().half()
+    if not B.is_contiguous() or B.dtype != torch.float16:
+        B = B.contiguous().half()
 
     M, K = A.shape
     _, N = B.shape
