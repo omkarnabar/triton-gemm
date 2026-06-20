@@ -1,21 +1,23 @@
 """
-Profile the Triton GEMM kernel with Nsight Systems.
+Profile the Triton GEMM kernel using torch.profiler.
+
+Since NSight Compute cannot be used in a Kaggle Environment, I resorted to using torch.profiler.
+If ncu does work, use that.
 
 Run from repo root:
-    nsys profile -o profiling/out/gemm_profile --force-overwrite=true \
-        python profiling/profile_gemm.py
+    python scripts/profile_gemm_torch.py
 
-Then open the .nsys-rep file in the Nsight Systems GUI, or summarize on
-the command line:
-    nsys stats profiling/out/gemm_profile.nsys-rep
+Or in a Kaggle/Jupyter cell:
+    !python scripts/profile_gemm_torch.py
 
-For kernel-level metrics (occupancy, memory throughput, warp stalls),
-use Nsight Compute instead:
-    ncu -o profiling/out/gemm_ncu --set full \
-        python profiling/profile_gemm.py
+Outputs:
+    - A printed summary table sorted by CUDA time
+    - A Chrome trace JSON viewable at chrome://tracing or
+      https://ui.perfetto.dev for a visual timeline
 """
 
 import torch
+from torch.profiler import profile, record_function, ProfilerActivity
 
 from kernels.gemm import matmul
 
@@ -28,21 +30,48 @@ def main():
     A = torch.randn((M, K), device='cuda', dtype=torch.float16)
     B = torch.randn((K, N), device='cuda', dtype=torch.float16)
 
-    # Warmup — lets the autotuner pick a config and JIT-compile
-    # before the profiled region, so the trace reflects steady-state
-    # kernel behavior rather than compilation overhead.
+    # Warmup — lets the autotuner pick a config and JIT-compile before
+    # the profiled region, so the trace reflects steady-state kernel
+    # behavior rather than compilation/tuning overhead.
     for _ in range(10):
         matmul(A, B)
     torch.cuda.synchronize()
 
-    # Profiled region. Wrap in NVTX ranges so the Nsight Systems
-    # timeline clearly marks where the kernel launches are, separate
-    # from any Python-side overhead.
-    torch.cuda.nvtx.range_push("triton_gemm_profiled_region")
-    for _ in range(20):
-        matmul(A, B)
-    torch.cuda.synchronize()
-    torch.cuda.nvtx.range_pop()
+    with profile(
+        activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+        record_shapes=True,
+        profile_memory=True,
+        with_stack=True,
+    ) as prof:
+        with record_function("triton_gemm_profiled_region"):
+            for _ in range(20):
+                matmul(A, B)
+            torch.cuda.synchronize()
+
+    # ---- Console summary: time breakdown by op ----
+    print(prof.key_averages().table(
+        sort_by="cuda_time_total",
+        row_limit=15,
+    ))
+
+    print("\nSummary grouped by input shape:")
+    print(prof.key_averages(group_by_input_shape=True).table(
+        sort_by="cuda_time_total",
+        row_limit=15,
+    ))
+
+    # ---- Memory summary ----
+    print("\nMemory summary (CUDA):")
+    print(prof.key_averages().table(
+        sort_by="self_cuda_memory_usage",
+        row_limit=10,
+    ))
+
+    # ---- Export chrome trace for visual timeline ----
+    trace_path = "scripts/out/gemm_torch_trace.json"
+    prof.export_chrome_trace(trace_path)
+    print(f"\nChrome trace exported to: {trace_path}")
+    print("View it at chrome://tracing or https://ui.perfetto.dev")
 
 
 if __name__ == "__main__":
