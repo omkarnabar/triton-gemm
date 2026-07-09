@@ -67,7 +67,7 @@ def benchmark_torch_attention(q, k, v):
     scores = torch.matmul(q, k.transpose(-2, -1)) * (1.0 / (d_head ** 0.5))
     mask = torch.triu(torch.full((n_ctx, n_ctx), float('-inf'), device="cuda"), diagonal=1)
     scores = scores + mask[None, None, :, :]
-    p = torch.softmax(scores, dim=-1)
+    p = torch.softmax(scores, dim=-1).to(torch.float16)
     return torch.matmul(p, v)
 
 
