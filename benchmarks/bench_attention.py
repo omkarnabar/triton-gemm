@@ -25,7 +25,7 @@ def check_correctness(B, H, N_CTX, D_HEAD):
     scores = torch.matmul(q, k.transpose(-2, -1)) * (1.0 / (D_HEAD ** 0.5))
     mask = torch.triu(torch.full((N_CTX, N_CTX), float('-inf'), device="cuda"), diagonal=1)
     scores = scores + mask[None, None, :, :]
-    p = torch.softmax(scores, dim=-1)
+    p = torch.softmax(scores, dim=-1).to(torch.float16)
     o_ref = torch.matmul(p, v)
 
     torch.testing.assert_close(
