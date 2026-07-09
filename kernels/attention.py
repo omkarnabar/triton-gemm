@@ -173,7 +173,7 @@ def attention(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor) -> torch.Tensor
     k = k.contiguous()
     v = v.contiguous()
 
-    o = torch.empty_like(q)
+    o = torch.empty((batch, heads, seq_len, head_dim), device=q.device, dtype=torch.float16) ## reutrn f16 not f32
 
     sm_scale = 1.0 / (head_dim ** 0.5)
 
