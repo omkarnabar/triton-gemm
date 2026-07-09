@@ -10,7 +10,7 @@ dependencies:
   - pytorch=2.3.0
   - pytorch-cuda=12.1
   - pip:
-      - triton=2.3.0
+      - triton==2.3.0
       - pytest>=7.4.0
       - matplotlib>=3.7.0
       - pandas>=2.0.0

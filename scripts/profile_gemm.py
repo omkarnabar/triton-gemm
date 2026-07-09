@@ -12,8 +12,7 @@ Or in a Kaggle/Jupyter cell:
 
 Outputs:
     - A printed summary table sorted by CUDA time
-    - A Chrome trace JSON viewable at chrome://tracing or
-      https://ui.perfetto.dev for a visual timeline
+    - A Chrome trace JSON 
 """
 
 import torch
@@ -68,10 +67,8 @@ def main():
     ))
 
     # ---- Export chrome trace for visual timeline ----
-    trace_path = "scripts/out/gemm_torch_trace.json"
+    trace_path = "scripts/out/gemm_trace.json"
     prof.export_chrome_trace(trace_path)
-    print(f"\nChrome trace exported to: {trace_path}")
-    print("View it at chrome://tracing or https://ui.perfetto.dev")
 
 
 if __name__ == "__main__":
