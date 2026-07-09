@@ -35,8 +35,8 @@ def test_attention_correctness(device, B, H, N_CTX, D_HEAD):
     scores = scores + mask[None, None, :, :]
     
     # 3. Softmax along key-dimension and multiply with V
-    p = torch.softmax(scores, dim=-1)
-    o_ref = torch.matmul(p, v).to(torch.float16)
+    p = torch.softmax(scores, dim=-1).to(torch.float16)
+    o_ref = torch.matmul(p, v)
 
     # Higher tolerances because Triton online softmax (FP32 accumulations) and 
     # eager torch FP16 materializations have slight arithmetic rounding variations.
@@ -71,8 +71,8 @@ def test_attention_non_power_of_two_shapes(device, B, H, N_CTX, D_HEAD):
     scores = torch.matmul(q, k.transpose(-2, -1)) * (1.0 / (D_HEAD ** 0.5))
     mask = torch.triu(torch.full((N_CTX, N_CTX), float('-inf'), device=device), diagonal=1)
     scores = scores + mask[None, None, :, :]
-    p = torch.softmax(scores, dim=-1)
-    o_ref = torch.matmul(p, v).to(torch.float16)
+    p = torch.softmax(scores, dim=-1).to(torch.float16)
+    o_ref = torch.matmul(p, v)
 
     torch.testing.assert_close(
         o_triton,
