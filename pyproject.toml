@@ -15,8 +15,8 @@ authors = [
 keywords = ["triton", "gpu", "cuda", "attention", "gemm", "kernels", "inference"]
 
 dependencies = [
-    "torch==2.3.0",
-    "triton==2.3.0",
+    "torch>=2.3.0",
+    "triton>=2.3.0",
 ]
 
 [project.optional-dependencies]
